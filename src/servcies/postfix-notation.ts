@@ -65,6 +65,7 @@ export class PostfixNotation {
       if (Tokenizer.isOp(token)) {
         while (
           stack.length > 0 &&
+          !Tokenizer.isOParen(stack[stack.length - 1]) &&
           checkPrecedence(
             token as OperatorName,
             stack[stack.length - 1] as OperatorName
@@ -76,10 +77,40 @@ export class PostfixNotation {
         stack.push(token);
         continue;
       }
+
+      if (Tokenizer.isOParen(token)) {
+        stack.push(token);
+        continue;
+      }
+
+      if (Tokenizer.isCParen(token)) {
+        while (!Tokenizer.isOParen(stack[stack.length - 1])) {
+          if (stack.length === 0) {
+            throw new Error("misplaced parenthesis");
+          }
+          const elt = stack.pop() as string;
+          output.push(elt);
+        }
+
+        if (
+          stack.length === 0 ||
+          !Tokenizer.isOParen(stack[stack.length - 1])
+        ) {
+          throw new Error("misplaced parenthesis");
+        }
+
+        stack.pop();
+      }
     }
 
     while (stack.length > 0) {
-      output.push(stack.pop() as string);
+      const elt = stack.pop() as string;
+
+      if (Tokenizer.isOParen(elt) || Tokenizer.isCParen(elt)) {
+        throw new Error("misplaced parenthesis");
+      }
+
+      output.push(elt);
     }
 
     return output;
@@ -111,6 +142,6 @@ export class PostfixNotation {
       throw new Error("invalid token");
     }
 
-    return stack[0];
+    return stack.pop() as string;
   }
 }

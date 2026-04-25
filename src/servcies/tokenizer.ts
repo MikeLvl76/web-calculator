@@ -19,10 +19,18 @@ export class Tokenizer {
     return /^(\+|-|x|\/)$/.test(token);
   }
 
+  static isOParen(token: string): boolean {
+    return token === "(";
+  }
+
+  static isCParen(token: string): boolean {
+    return token === ")";
+  }
+
   static tokenize(expression: string): string[] {
     let index = 0;
     const tokens: string[] = [];
-    let prevType: "number" | "operator" | null = null;
+    let prevType: "number" | "operator" | "oparen" | "cparen" | null = null;
 
     while (index < expression.length) {
       const token = expression[index];
@@ -70,6 +78,38 @@ export class Tokenizer {
         }
         tokens.push(token);
         prevType = "operator";
+        index++;
+        continue;
+      }
+
+      if (Tokenizer.isOParen(token)) {
+        if (prevType === "cparen") {
+          throw new Error("misplaced closing parenthesis");
+        }
+        tokens.push(token);
+        // if (index + 1 < expression.length) {
+        //   const subTokens = Tokenizer.tokenize(
+        //     expression.substring(index + 1, expression.indexOf(")"))
+        //   );
+        //   tokens.push(...subTokens);
+        //   prevType = "number";
+        //   index++;
+        //   continue;
+        // }
+        prevType = "oparen";
+        index++;
+        continue;
+      }
+
+      if (Tokenizer.isCParen(token)) {
+        if (prevType === "oparen") {
+          throw new Error("invalid empty parentheses");
+        }
+        if (prevType === "operator") {
+          throw new Error(`invalid operator sequence '${token}'`);
+        }
+        tokens.push(token);
+        prevType = "cparen";
         index++;
         continue;
       }
